@@ -206,14 +206,136 @@ app.delete("/customers/:id", authenticate, async (req, res) => {
 });
 
 // 💳 Loan Management (Protected)
+// Create a new loan for a customer of the logged-in user
 app.post("/new-loan", authenticate, async (req, res) => {
-    const { customerId, amount, dueDate } = req.body;
-    const userId = req.user._id; 
-    console.log("Received loan data:", { customerId, amount, dueDate });
+  const { customerId, amount, dueDate } = req.body;
+  const userId = req.user._id;
 
-    
+  if (!customerId || !amount || !dueDate) {
+    return res
+      .status(400)
+      .json({ message: "customerId, amount, and dueDate are required." });
+  }
 
+  console.log("Received loan data:", { customerId, amount, dueDate });
+  try {
+    const customer = await Customer.findOne({ _id: customerId, userId });
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
 
+    const newLoan = await Loan.create({
+      customerId,
+      userId,
+      amount,
+      dueDate,
+    });
+
+    res.status(201).json({
+      message: "Loan created successfully",
+      loan: newLoan,
+    });
+  } catch (error) {
+    console.error("Error creating loan:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Get all loans for the logged-in user
+app.get("/loans", authenticate, async (req, res) => {
+  const userId = req.user._id;
+  console.log("User ID from token:", userId);
+
+  try {
+    const loans = await Loan.find({ userId });
+    if (loans.length === 0) {
+      return res.status(404).json({ message: "No loans found for this user" });
+    }
+
+    res.status(200).json({ loans });
+    console.log("Loans fetched successfully:", loans);
+  } catch (error) {
+    console.error("Error fetching loans:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Get all loans for a customer of the logged-in user
+app.get("/loans/:customerId", authenticate, async (req, res) => {
+  const userId = req.user._id;
+  const customerId = req.params.customerId;
+
+  try {
+    const loans = await Loan.find({ customerId, userId });
+    if (loans.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No loans found for this customer" });
+    }
+
+    res.status(200).json({ loans });
+  } catch (error) {
+    console.error("Error fetching loans:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// REPAYMENT API
+app.post("/loans/:id/repayment", authenticate, async (req, res) => {
+  const userId = req.user._id;
+  const loanId = req.params.id;
+  const { amount } = req.body;
+
+  try {
+    if (!amount || amount <= 0) {
+      return res
+        .status(400)
+        .json({ message: "Amount is required and should be greater than 0" });
+    }
+    const loan = await Loan.findOne({
+      _id: loanId,
+      userId,
+    });
+    if (!loan) {
+      return res.status(404).json({ message: "Loan not found" });
+    }
+    if (loan.status === "paid") {
+      return res.status(400).json({ message: "Loan is already paid" });
+    }
+    const repayment = {
+      amount,
+      date: new Date(),
+    };
+    loan.repayments.push(repayment);
+    await loan.save();
+    res.status(200).json({
+      message: "Repayment added successfully",
+      loan,
+    });
+  } catch (error) {
+    console.error("Error adding repayment:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+//list of customers with overdue
+app.get("/loans-overdue", authenticate, async (req, res) => {
+  const userId = req.user._id;
+  try {
+    const overdueLoans = await Loan.find({
+      userId,
+      status: "overdue",
+    }).populate("customerId", "name phone trustScore");
+
+    if (overdueLoans.length === 0) {
+      return res.status(404).json({ message: "No overdue loans found" });
+    }
+
+    res.status(200).json({ overdueLoans });
+  } catch (error) {
+    console.error("Error fetching overdue loans:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 //db connection anf server start
