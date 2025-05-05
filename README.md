@@ -52,15 +52,21 @@ cd <project-folder>
 bash
 Copy
 Edit
+
 npm install
-3. Create a .env file
+
+4. Create a .env file
 env
 Copy
 Edit
-MONGO_URI=your_mongodb_connection_string
+
+DATABASE_URL=your_mongodb_connection_string
+
 JWT_SECRET=your_secret_key
+
 PORT=5000
-4. Start the server
+
+5. Start the server
 bash
 Copy
 Edit
