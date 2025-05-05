@@ -1,4 +1,3 @@
-// server.js or app.js
 import express from "express";
 import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
@@ -242,7 +241,7 @@ app.post("/new-loan", authenticate, async (req, res) => {
 });
 
 // Get all loans for the logged-in user
-app.get("/loans", authenticate, async (req, res) => {
+app.get("/loans", authenticate, async (req, res) => { 
   const userId = req.user._id;
   console.log("User ID from token:", userId);
 

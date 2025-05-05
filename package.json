@@ -1,6 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "this is a backend app for Loan Tracker for Shopkeepers.",
   "main": "app.js",
   "scripts": {
